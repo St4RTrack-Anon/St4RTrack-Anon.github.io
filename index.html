@@ -94,6 +94,18 @@
     }
   </style>
   <!-- End new styles -->
+
+  <!-- Add MathJax support -->
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+  </script>
 </head>
 
 <body>
@@ -156,8 +168,7 @@
       <font size="+1">
         Given an RGB video capturing dynamic scenes, <strong>St4RTrack</strong> simultaneously tracks the points from the initial frame
 (<span style="color: rgb(0,0,189);">visualized in blue</span>) and reconstructs the geometry of the subsequent frames (<span style="color: rgb(189,0,0);">in red</span>) in a consistent world coordinate frame.
-<strong>St4RTrack</strong> is a <em>feed-forward</em> framework that takes a pair of images as input and outputs two pointmaps in the world frame. Successively
-running the pair of first frame with each subsequent frame results in simultaneous tracking and reconstruction of the whole video.
+<strong>St4RTrack</strong> is a <em>feed-forward</em> framework that takes a pair of images as input and outputs two pointmaps in the world frame. By iteratively processing the first frame paired with each subsequent frame, <strong>St4RTrack</strong> achieves simultaneous tracking and reconstruction for the entire video.
       </font>
     </a>
     <font size="+2">
@@ -166,7 +177,7 @@ running the pair of first frame with each subsequent frame results in simultaneo
         <a href="https://arxiv.org/abs/2410.03825" target="_blank">[Arxiv]</a> &nbsp;&nbsp;&nbsp;&nbsp;
         <a href="page1.html" target="_blank" style="font-weight: bold; color: rgb(238, 60, 223);">[Interactive Results🔥]</a> &nbsp;&nbsp;&nbsp;&nbsp;
         <a href="https://github.com/Junyi42/monst3r" target="_blank">[Code (soon)]</a>&nbsp;&nbsp;&nbsp;&nbsp;
-        <!-- <a href="files/bibtex.txt" target="_blank">[BibTeX]</a> -->
+        <a href="files/bibtex.txt" target="_blank">[BibTeX]</a>
       </p>
     </font>
   </div>
@@ -253,45 +264,41 @@ running the pair of first frame with each subsequent frame results in simultaneo
   </div>
 
   <div class="content">
-    <h2>Pointmap Representation for Dynamic Scene</h2>
-    <p> <strong>DUSt3R's pointmap representation</strong>: estimate xyz coordinates for <strong>two frames</strong>, <strong>aligned in</strong> the camera coordinate system of <strong>the first frame</strong>. <br> ➡️ There is no constraint on dynamic/static scenes in the representation! But how does DUSt3R actually work for dynamic scenes? </p>
-    <img class="summary-img" src="./files/fig2_limitation.png" style="width:100%;margin-bottom: -10px;">
+    <h2>Unified 4D Modeling with Time-Dependent Pointmap</h2>
+    <p> <strong>Pointmap representation</strong>: estimate per-pixel xyz coordinates for <strong>two frames</strong>, <strong>aligned in</strong> the camera coordinate system of <strong>the first frame</strong>. 
+      <br> <strong>Core Idea</strong>: by properly defining the two pointmaps, we can enable simultaneous tracking and reconstruction, using the <em>same</em> architecture. </p>
+    <img class="summary-img" src="./files/fig2_conceptv2.png" style="width:100%;margin-bottom: -10px;">
     <h3>
-      <center>Limitation of DUSt3R on dynamic scenes</center>
+      <center>Conceptual difference between DUSt3R, MonST3R, and St4RTrack</center>
     </h3>
     <a>
-      <strong>Left</strong>: DUSt3R aligns the moving foreground subject and misaligns the background points as it is only trained on static scenes. 
-      <strong>Right</strong>: DUSt3R fails to estimate the depth of a foreground subject, placing it in the background.
+      <strong>Left</strong>: DUSt3R reconstructs two images of a static scene, and aligns them in the same camera coordinate system.
+      <strong>Middle</strong>: MonST3R works for dynamic scenes, but it reconstructs the geometry of two frames in their own timestamp.
+      <strong>Right</strong>: St4RTrack estimatess two pointmaps at the same timestamp. It predicts how the points in the first frame move to the second frame, and reconstructs the geometry of the second frame.
     </a>
 
-    <p> As this is mainly a <strong>data issue</strong>, we propose a simple approach to adapt DUSt3R to dynamic scenes, by <strong>fine-tuning</strong> on a small set of dynamic videos, which surprisingly works well.</p>
-    <img class="summary-img" src="./files/fig3_finetune_dataset.png" style="width:90%;">
-    <br>
-    <img class="summary-img" src="./files/fig4_fintune_ablation.png" style="width:70%;">
-    <h3>
-      <center>(<em>Top</em>) Training datasets used fine-tuning on dynamic scenes; (<em>Bottom</em>) Ablation study on finetuning</center>
-    </h3>
+    <p> We train our network on two synthetic datasets, PointOdyssey and DynamicStereo. 
+      We found that training on such small-scale, sparse labeled, and unrealistic synthetic data is sufficient for our network to learn the newly proposed representation. </p>
   </div>
   
   <div class="content">
-    <h2>Dynamic Global Point Cloud</h2>
-    <p> For a video input consisting of more than two frames, we can aggregate all the pairwise pointmap results to build a global point cloud. </p>
-    <img class="summary-img" src="./files/fig5_system.png" style="width:100%;">
+    <h2>Adapt to Any Video without 4D Label</h2>
+    <p> However, the small-scale supervised training limits our method to generalize to the full range of motion and geometry present in real-world dynamic scenes and fine-grained prediction.
+      Thus, we propose to leverage the geometry and correspondence inherent in the representation to adapt to any video without 4D label, with only <strong>reprojected supervision signals</strong> (e.g., 2D trajectories and monocular depth). </p>
+    <img class="summary-img" src="./files/fig3_overview.png" style="width:100%;">
     <h3>
-      <center>Dynamic global point cloud and camera pose estimation</center>
+      <center>Overview of St4RTrack</center>
     </h3>
-    <a>
-      Given a fixed sized of temporal window, we compute pairwise pointmap for each frame pair with MonST3R and optical flow from off-the-shelf method. These intermediates then serve as inputs to optimize a global point cloud X<span style="text-decoration:overline;">̂</span>
-      and per-frame camera poses P<span style="text-decoration:overline;">̂</span> and intrinsics K<span style="text-decoration:overline;">̂</span>. 
-      Video depth can be directly derived from this unified representation.
+    <a style="line-height: 1.0;">
+      Given frame $1$ and frame $j$ as input, the tracking branch outputs 
+      ${}^{\color{rgb(204,153,0)}{1}}X^{\color{rgb(180,80,180)}{1}}_{\color{rgb(80,200,80)}{j}}$, 
+      the pointmap that corresponds to $\color{rgb(180,80,180)}{\text{observed content}}$ of the first frame at $\color{rgb(80,200,80)}{\text{timestep}}$ $j$ in its own $\color{rgb(204,153,0)}{\text{camera coordinate}}$ (i.e. world coordinate); 
+      the reconstruction branch outputs ${}^{\color{rgb(204,153,0)}{1}}X^{\color{rgb(180,80,180)}{j}}_{\color{rgb(80,200,80)}{j}}$, the pointmap of the $\color{rgb(180,80,180)}{\text{content}}$ in frame $j$ at its own $\color{rgb(80,200,80)}{\text{timestep}}$ in the world $\color{rgb(204,153,0)}{\text{coordinate}}$.
     </a>
-
-    <!-- <p> The global optimization is based on the following three loss terms: </p>
-    <ul>
-      <li> <strong>Alignment loss</strong>: align the global point cloud of each frame with every pairwise pointmap. </li>
-      <li> <strong>Flow loss</strong>: encourage the projected flow from global pointmaps and camera poses to be consitent with the estimated flow. </li>
-      <li> <strong>Smoothness loss</strong>: enforce the temporal smoothness of camera trajectory. </li>
-    </ul> -->
+    <div style="height: 0.75em;"></div>
+    <a style="line-height: 1.5;">
+      To adapt to new videos without any 4D labels, the camera is computed via <strong>differentiable PnP</strong> from the reconstruction pointmap, enabling <strong>reprojected supervision signals</strong> (e.g., 2D trajectories and monocular depth). We finetune both branches during training with synthetic data, and when adapting to a new video, <strong>only the tracking branch</strong> is fine-tuned using these reprojected supervision signals.
+    </a>
   </div>
 
   <div class="content">
