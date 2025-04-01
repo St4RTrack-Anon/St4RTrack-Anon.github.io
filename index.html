@@ -30,10 +30,11 @@
 
     iframe {
       border-radius: 0.5em;
-      width: 27.5em;
-      height: 27.5em;
+      width: 57.5em;
+      height: 32.75em;
       border: none;
       box-shadow: 0 0 1em 0em rgba(0, 0, 0, 0.15);
+      overflow: hidden;
     }
 
     @media (max-width: 768px) {
@@ -91,6 +92,27 @@
     .instruction-item_small img {
       width: 30px;
       height: 30px;
+    }
+
+    /* This creates a container that crops the iframe content */
+    .iframe-container {
+      width: 57.5em;
+      height: 31.0em;
+      overflow: hidden;
+      position: relative;
+      border-radius: 0.5em;
+      box-shadow: 0 0 1em 0em rgba(0, 0, 0, 0.15);
+    }
+    
+    /* This makes the iframe larger than its container and centers it */
+    .iframe-container iframe {
+      position: absolute;
+      top: 0;
+      left: -10%; /* Adjust this value to trim left border */
+      width: 120%; /* Make wider than container to trim sides */
+      height: 100%;
+      border: none;
+      box-shadow: none;
     }
   </style>
   <!-- End new styles -->
@@ -237,12 +259,10 @@
         align-items: center;
         gap: 2em;
       ">
-    <!-- Insert two iframes -->
-    <iframe
-      src="https://MonST3R-project.github.io/build/?playbackPath=https://MonST3R-project.github.io/recordings/recording_lady-running.viser&initDistanceScale=1&initHeightOffset=0.0"></iframe>
-
-    <iframe
-      src="https://MonST3R-project.github.io/build/?playbackPath=https://MonST3R-project.github.io/recordings/recording_judo.viser&initDistanceScale=0.2&initHeightOffset=0.175"></iframe>
+    <!-- Insert iframe with trimmed borders -->
+    <div class="iframe-container">
+      <iframe src="https://junyi42-viser-test.hf.space/" scrolling="no"></iframe>
+    </div>
   </div>
 
   </div>
